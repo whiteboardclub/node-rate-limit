@@ -1,12 +1,20 @@
 {
   "name": "node-rate-limit",
   "version": "0.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "jest --config jest.config.ts"
+  "description": "A rate limiting library for Node, using Redis. Implements 5 different rate limiting algorithms.",
+  "author": {
+    "name": "Nishant Jawla",
+    "url": "https://nishantjawla.com/"
   },
-  "author": "",
+  "type": "module",
+  "homepage": "https://github.com/whiteboardclub/node-rate-limit",
+  "repository": "https://github.com/whiteboardclub/node-rate-limit",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "test": "jest --config jest.config.json"
+  },
   "license": "ISC",
   "devDependencies": {
     "@types/jest": "^29.5.14",
