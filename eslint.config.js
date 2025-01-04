@@ -2,6 +2,8 @@ import globals from "globals";
 import pluginJs from "@eslint/js";
 import tseslint from "typescript-eslint";
 import jestPlugin from "eslint-plugin-jest";
+import tsPlugin from "@typescript-eslint/eslint-plugin";
+import parser from "@typescript-eslint/parser";
 
 /** @type {import('eslint').Linter.Config} */
 export default [
@@ -12,9 +14,11 @@ export default [
         ...globals.browser,
         ...globals.jest,
       },
+      parser,
     },
     plugins: {
-      jest: jestPlugin, // Specify the Jest plugin as an object
+      jest: jestPlugin,
+      "@typescript-eslint": tsPlugin,
     },
     rules: {
       ...pluginJs.configs.recommended.rules,
