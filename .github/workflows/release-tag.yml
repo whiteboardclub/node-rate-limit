@@ -1,0 +1,50 @@
+name: Release Tag
+
+on:
+  pull_request:
+    branches:
+      - 'main'
+    types:
+      - 'closed'
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Tag bump based on pull request
+        env:
+          patch: ${{ contains(github.event.pull_request.labels.*.name, 'patch') }}
+          minor: ${{ contains(github.event.pull_request.labels.*.name, 'minor') }}
+          major: ${{ contains(github.event.pull_request.labels.*.name, 'major') }}
+        run: |
+          if [ "$minor" == true ]; then
+            upgrade="minor"
+          elif [ "$major" == true ]; then
+            upgrade="major"
+          else
+            upgrade="patch"
+          fi
+          echo "tag-update=$upgrade" >> $GITHUB_ENV
+
+      - name: Create tag
+        id: bump-tag
+        uses: anothrNick/github-tag-action@1.36.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BUMP: ${{ env.tag-update }}
+          WITH_V: false
+
+      - name: Create release
+        uses: ncipollo/release-action@v1.10.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ steps.bump-tag.outputs.tag }}
+          name: Release ${{ steps.bump-tag.outputs.tag }}
+          draft: false
+          prerelease: false
