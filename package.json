@@ -33,9 +33,6 @@
   ],
   "scripts": {
     "test": "jest --config jest.config.json",
-<<<<<<< HEAD
-    "build": "pkgroll --src src/"
-=======
     "build": "pkgroll --src source/",
     "prepare": "husky install",
     "lint": "eslint --ignore-pattern '.gitignore' \"{src,tests}/**/*.+(ts|js|tsx)\"",
@@ -48,7 +45,6 @@
       "prettier --write"
     ],
     "*.{md,json}": "prettier --write"
->>>>>>> 60365d2d903039fb4cd507f3bbd9cba487fd3aa2
   },
   "license": "ISC",
   "devDependencies": {
