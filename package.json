@@ -2,10 +2,6 @@
   "name": "node-rate-limit",
   "version": "0.0.0",
   "description": "A rate limiting library for Node, using Redis. Implements 5 different rate limiting algorithms.",
-  "author": {
-    "name": "Nishant Jawla",
-    "url": "https://nishantjawla.com/"
-  },
   "type": "module",
   "exports": {
     ".": {
