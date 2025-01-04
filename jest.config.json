@@ -4,7 +4,7 @@
   "collectCoverage": true,
   "collectCoverageFrom": ["source/**/*.ts"],
   "testTimeout": 30000,
-  "testMatch": ["test/*\\.test\\.ts$"],
+  "testMatch": ["**/?(*.)+(test).ts"],
   "moduleFileExtensions": ["js", "json", "ts"],
   "moduleNameMapper": {
     "^(\\.{1,2}/.*)\\.js$": "$1"
