@@ -3,9 +3,11 @@ name: Release Tag
 on:
   pull_request:
     branches:
-      - 'main'
+      - "main"
     types:
-      - 'closed'
+      - "closed"
+
+permissions: write-all
 
 jobs:
   create-release:
