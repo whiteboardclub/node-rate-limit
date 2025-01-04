@@ -7,6 +7,8 @@ on:
     types:
       - "closed"
 
+permissions: write-all
+
 jobs:
   create-release:
     runs-on: ubuntu-latest
