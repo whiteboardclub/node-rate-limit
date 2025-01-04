@@ -15,6 +15,6 @@ jobs:
         with:
           mode: exactly
           count: 1
-          labels: 'patch, minor, major'
+          labels: "patch, minor, major"
           exit_type: failure
           token: ${{ secrets.GITHUB_TOKEN }}
