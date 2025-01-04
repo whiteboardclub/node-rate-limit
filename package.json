@@ -40,10 +40,11 @@
     "format": "prettier --ignore-path .prettierignore --write \"**/*.+(js|ts|json|tsx|mdx)\" --log-level silent"
   },
   "lint-staged": {
-    "*.{ts,js}": "eslint --cache --fix",
-    "*.{ts,js,md}": "prettier --write",
-    "*.js": "eslint --cache --fix",
-    "*.{js,md}": "prettier --write"
+    "*.{ts,js}": [
+      "eslint --cache --fix",
+      "prettier --write"
+    ],
+    "*.{md,json}": "prettier --write"
   },
   "license": "ISC",
   "devDependencies": {
