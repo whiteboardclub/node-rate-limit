@@ -1,7 +1,6 @@
 import Redis from "ioredis";
-import RedisStorage from "../src/storages/redis-storage"; // Path to your RedisStorage
-import TokenBucketStrategy from "../src/strategies/token-bucket-strategy"; // Path to your TokenBucketStrategy
-import { TokenBucketStrategyResponse } from "../src/interfaces/responses"; // Path to your response interface
+import RedisStorage from "../src/storages/redis-storage";
+import TokenBucketStrategy from "../src/strategies/token-bucket-strategy";
 import { TokenBucketStrategyOptions } from "../src/interfaces/options";
 
 const redis = new Redis();
@@ -9,19 +8,13 @@ const redis = new Redis();
 describe("TokenBucketStrategy with RedisStorage", () => {
   let redisStorage: RedisStorage;
   let tokenBucket: TokenBucketStrategy;
-  const userKey = "user:123"; // Unique key to identify rate-limiting for a user
+  const userKey = "user:123";
 
   beforeAll(async () => {
     if (redis.status && redis.status !== "ready" && redis.status !== "connecting") {
       await redis.connect();
     }
-
     redisStorage = new RedisStorage(redis);
-    // 10 tokens, 2 token per second refill rate
-    const options: TokenBucketStrategyOptions = { store: redisStorage, bucketCapacity: 10, refillRate: 2 };
-    tokenBucket = new TokenBucketStrategy(options);
-
-    // Use fake timers for controlling time
     jest.useFakeTimers();
   });
 
@@ -30,57 +23,105 @@ describe("TokenBucketStrategy with RedisStorage", () => {
     jest.useRealTimers();
   });
 
+  beforeEach(async () => {
+    await redisStorage.delete(`token_bucket:${userKey}`);
+    await redisStorage.delete(`token_bucket:${userKey}:last_refill`);
+
+    const options: TokenBucketStrategyOptions = { store: redisStorage, bucketCapacity: 10, refillRate: 2 };
+    tokenBucket = new TokenBucketStrategy(options);
+  });
+
   test("should allow a request if there are enough tokens", async () => {
-    const result: TokenBucketStrategyResponse = await tokenBucket.check(userKey);
+    const result = await tokenBucket.check(userKey);
     expect(result.allowed).toBe(true);
-    expect(result.remaining).toBe(9); // Since we start with 10 tokens
+    expect(result.remaining).toBe(9);
   });
 
   test("should deny a request if there are not enough tokens", async () => {
-    // Consuming all tokens
     for (let i = 0; i < 10; i++) {
       await tokenBucket.check(userKey);
     }
-
-    const result: TokenBucketStrategyResponse = await tokenBucket.check(userKey);
+    const result = await tokenBucket.check(userKey);
     expect(result.allowed).toBe(false);
     expect(result.remaining).toBe(0);
-    // Should indicate how long until retry
     expect(result.retryAfter).toBeGreaterThan(0);
   });
 
   test("should refill tokens after some time", async () => {
-    // Consuming all tokens
     for (let i = 0; i < 10; i++) {
       await tokenBucket.check(userKey);
     }
 
-    const beforeResult: TokenBucketStrategyResponse = await tokenBucket.check(userKey);
-
-    expect(beforeResult.remaining).toBe(0);
-
-    // Simulate time passing (e.g., 3 seconds)
-    jest.advanceTimersByTime(4000); // Advance by 3 seconds (refill rate is 2 token/sec)
-
-    // Check tokens after 3 seconds
-    const result: TokenBucketStrategyResponse = await tokenBucket.check(userKey);
-
+    jest.advanceTimersByTime(4000);
+    const result = await tokenBucket.check(userKey);
     expect(result.allowed).toBe(true);
-    // will check on this not working
-    expect(result.remaining).toBe(7); // 3 seconds * 2 token/sec = 6 tokens refilled, so remaining = 6
+    // 8 tokens refilled, 1 consumed
+    expect(result.remaining).toBe(7);
   });
 
   test("should reset the bucket", async () => {
-    // Consuming all tokens
     for (let i = 0; i < 10; i++) {
       await tokenBucket.check(userKey);
     }
 
-    // Resetting the bucket
     await tokenBucket.reset(userKey);
-
-    const result: TokenBucketStrategyResponse = await tokenBucket.check(userKey);
+    const result = await tokenBucket.check(userKey);
     expect(result.allowed).toBe(true);
-    expect(result.remaining).toBe(9); // After reset, we should have 10 tokens initially
+    expect(result.remaining).toBe(9);
+  });
+
+  test("should retrieve the current state without consuming a token", async () => {
+    const stateBefore = await tokenBucket.get(userKey);
+    expect(stateBefore.remaining).toBe(10);
+    expect(stateBefore.allowed).toBe(true);
+
+    await tokenBucket.check(userKey);
+
+    const stateAfter = await tokenBucket.get(userKey);
+    expect(stateAfter.remaining).toBe(9);
+    expect(stateAfter.allowed).toBe(true);
+  });
+
+  test("should handle invalid options of less than zero", () => {
+    expect(() => {
+      new TokenBucketStrategy({
+        store: redisStorage,
+        bucketCapacity: 0,
+        refillRate: 1,
+      });
+    }).toThrow("bucketCapacity and refillRate must be greater than 0.");
+  });
+
+  test("should handle invalid options of not integers", () => {
+    expect(() => {
+      new TokenBucketStrategy({
+        store: redisStorage,
+        bucketCapacity: 1.2,
+        refillRate: 1.5,
+      });
+    }).toThrow("bucketCapacity and refillRate must be integers.");
+  });
+
+  test("should handle fractional tokens correctly", async () => {
+    for (let i = 0; i < 10; i++) {
+      await tokenBucket.check(userKey);
+    }
+
+    jest.advanceTimersByTime(500);
+    const result = await tokenBucket.check(userKey);
+
+    expect(result.allowed).toBe(true);
+    expect(result.remaining).toBe(0);
+    expect(result.retryAfter).toBeGreaterThan(0);
+  });
+
+  test("should calculate retryAfter correctly when no tokens are available", async () => {
+    for (let i = 0; i < 10; i++) {
+      await tokenBucket.check(userKey);
+    }
+
+    const result = await tokenBucket.check(userKey);
+    expect(result.allowed).toBe(false);
+    expect(result.retryAfter).toBeGreaterThan(0);
   });
 });
