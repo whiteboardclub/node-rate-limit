@@ -1,6 +1,6 @@
 import Redis from "ioredis";
 import RedisStorage from "../storages/redis-storage";
-import SlidingWindowCounterStrategy from "../strategies/SlidingWindowCounterStrategy ";
+import SlidingWindowCounterStrategy from "../strategies/SlidingWindowCounterStrategy";
 import { SlidingWindowCounterOptions } from "../interfaces/options";
 
 const redis = new Redis();
