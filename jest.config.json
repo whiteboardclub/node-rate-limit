@@ -2,9 +2,9 @@
   "verbose": true,
   "preset": "ts-jest/presets/default-esm",
   "collectCoverage": true,
-  "collectCoverageFrom": ["source/**/*.ts"],
+  "collectCoverageFrom": ["src/**/*.ts"],
   "testTimeout": 30000,
-  "testMatch": ["**/?(*.)+(test).ts"],
+  "testMatch": ["**/?(*-)+(test).ts"],
   "moduleFileExtensions": ["js", "json", "ts"],
   "moduleNameMapper": {
     "^(\\.{1,2}/.*)\\.js$": "$1"
