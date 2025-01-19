@@ -1,17 +1,19 @@
 import { StorageType } from "../constants/storage-type";
 import BaseStorage from "../storages/base-storage";
+import { Redis } from "ioredis";
 
 class RedisStorage extends BaseStorage {
-  private redisClient: any;
+  private redisClient: Redis;
 
   /**
    * Constructor for RedisStorage
    * @param redisClient A Redis client instance provided by the user
    */
-  constructor(redisClient: any) {
+  constructor(redisClient: Redis) {
     super(StorageType.redis);
 
     if (!redisClient || typeof redisClient.set !== "function") {
+      console.error("A valid Redis client instance must be provided.");
       throw new Error("A valid Redis client instance must be provided.");
     }
 
@@ -24,12 +26,17 @@ class RedisStorage extends BaseStorage {
    * @param value The value to store
    * @param ttl Optional TTL in seconds
    */
-  async set(key: string, value: any, ttl?: number): Promise<void> {
-    const serializedValue = JSON.stringify(value);
-    if (ttl) {
-      await this.redisClient.set(key, serializedValue, "EX", ttl);
-    } else {
-      await this.redisClient.set(key, serializedValue);
+  async set<T>(key: string, value: T, ttl?: number): Promise<void> {
+    try {
+      const serializedValue = JSON.stringify(value);
+      if (ttl) {
+        await this.redisClient.set(key, serializedValue, "EX", ttl);
+      } else {
+        await this.redisClient.set(key, serializedValue);
+      }
+    } catch (error) {
+      console.error(`RedisStorage: Error setting key "${key}":`, error);
+      throw new Error("Failed to set value in Redis.");
     }
   }
 
@@ -38,9 +45,14 @@ class RedisStorage extends BaseStorage {
    * @param key The key to retrieve the value for
    * @returns The parsed value or `null` if the key does not exist
    */
-  async get(key: string): Promise<any> {
-    const data = await this.redisClient.get(key);
-    return data ? JSON.parse(data) : null;
+  async get<T>(key: string): Promise<T | null> {
+    try {
+      const data = await this.redisClient.get(key);
+      return data ? (JSON.parse(data) as T) : null;
+    } catch (error) {
+      console.error(`RedisStorage: Error retrieving key "${key}":`, error);
+      return null;
+    }
   }
 
   /**
@@ -48,15 +60,39 @@ class RedisStorage extends BaseStorage {
    * @param key The key to delete
    */
   async delete(key: string): Promise<void> {
-    await this.redisClient.del(key);
+    try {
+      await this.redisClient.del(key);
+    } catch (error) {
+      console.error(`RedisStorage: Error deleting key "${key}":`, error);
+      throw new Error(`Error deleting key "${key}"`);
+    }
   }
 
   /**
-   * Returns the underlying Redis client for advanced use cases.
-   * @returns The Redis client instance
+   * Checks if a key exists in Redis.
+   * @param key The key to check
+   * @returns A boolean indicating whether the key exists
    */
-  getRedisClient(): any {
-    return this.redisClient;
+  async exists(key: string): Promise<boolean> {
+    try {
+      const result = await this.redisClient.exists(key);
+      return result > 0;
+    } catch (error) {
+      console.error(`RedisStorage: Error checking existence of key "${key}":`, error);
+      throw new Error(`Error checking existence of key "${key}"`);
+    }
+  }
+
+  /**
+   * Flushes all keys in Redis (use with caution).
+   */
+  async flushAll(): Promise<void> {
+    try {
+      await this.redisClient.flushall();
+    } catch (error) {
+      console.error("RedisStorage: Error flushing all keys:", error);
+      throw new Error("Failed to flush all keys in Redis.");
+    }
   }
 }
 
